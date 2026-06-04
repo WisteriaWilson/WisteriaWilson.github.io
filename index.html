@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>欢迎页</title>
+    <style>
+        /* 全屏背景图 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: url('background.jpg') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* 文字靠下 */
+            align-items: center;
+        }
+
+        /* 闪烁文字 */
+        #start {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 50px;
+            cursor: pointer;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50%, 100% { opacity: 1; }
+            25%, 75% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="start">TOUCH TO START</div>
+
+    <script>
+        const start = document.getElementById('start');
+
+        // 点击文字或附近任意位置
+        document.body.addEventListener('click', function() {
+            window.location.href = 'index.html'; // 跳转主页
+        });
+
+        // 阻止点击文字外冒泡效果（可选）
+        start.addEventListener('click', function(e) {
+            e.stopPropagation();
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
