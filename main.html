@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wisteria Protocol Hub</title>
+    <style>
+        :root {
+            --bg: #080707;
+            --panel: #19110b;
+            --panel-soft: rgba(33, 22, 16, 0.86);
+            --panel-dark: rgba(12, 10, 9, 0.92);
+            --gold: #d19a41;
+            --gold-bright: #f4d28c;
+            --copper: #9f5b2c;
+            --red: #98241e;
+            --red-bright: #cb402e;
+            --ink: #0b0a09;
+            --text: #f2ead8;
+            --muted: rgba(242, 234, 216, 0.68);
+            --line: rgba(244, 210, 140, 0.28);
+            --green: #2ace76;
+            --metal-bright: rgba(255, 235, 188, 0.62);
+            --metal-mid: rgba(190, 130, 68, 0.72);
+            --metal-dark: rgba(55, 32, 19, 0.9);
+            --float-glow: rgba(232, 149, 58, 0.14);
+            --float-shadow: rgba(0, 0, 0, 0.54);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            min-height: 100%;
+        }
+
+        body {
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 18% 16%, rgba(199, 150, 76, 0.1), transparent 18%),
+                radial-gradient(circle at 82% 78%, rgba(209, 82, 46, 0.1), transparent 22%),
+                linear-gradient(180deg, #0a0909 0%, #070707 100%);
+            color: var(--text);
+            font-family: "Bahnschrift", "Segoe UI", sans-serif;
+        }
+
+        .hub {
+            position: relative;
+            height: 100vh;
+            min-height: 0;
+            padding: 16px;
+            display: grid;
+            grid-template-rows: minmax(0, 1fr) clamp(118px, 16vh, 154px);
+            gap: 22px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.02)),
+                radial-gradient(circle at center, rgba(255, 255, 255, 0.015), transparent 55%);
+            isolation: isolate;
+        }
+
+        .hub::before,
+        .hub::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .hub::before {
+            background:
+                linear-gradient(120deg, rgba(190, 145, 80, 0.06), transparent 16%),
+                linear-gradient(300deg, rgba(190, 145, 80, 0.06), transparent 14%),
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(255, 255, 255, 0.014) 0,
+                    rgba(255, 255, 255, 0.014) 1px,
+                    transparent 1px,
+                    transparent 88px
+                );
+            mix-blend-mode: screen;
+        }
+
+        .hub::after {
+            background:
+                radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.6) 100%),
+                repeating-linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.02) 0,
+                    rgba(255, 255, 255, 0.02) 1px,
+                    transparent 1px,
+                    transparent 4px
+                );
+            opacity: 0.55;
+        }
+
+        .desk-paper,
+        .desk-paper::before,
+        .desk-paper::after {
+            position: absolute;
+            pointer-events: none;
+            border: 1px solid rgba(255, 234, 194, 0.08);
+            background:
+                linear-gradient(180deg, rgba(95, 70, 47, 0.22), rgba(27, 20, 15, 0.68)),
+                repeating-linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.015) 0,
+                    rgba(255, 255, 255, 0.015) 1px,
+                    transparent 1px,
+                    transparent 3px
+                );
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+        }
+
+        .desk-paper {
+            inset: auto auto 13% 4%;
+            width: 24%;
+            height: 14%;
+            transform: rotate(-2.5deg);
+            opacity: 0.38;
+        }
+
+        .desk-paper::before {
+            content: "";
+            inset: -22% auto auto 120%;
+            width: 120%;
+            height: 140%;
+            transform: rotate(8deg);
+        }
+
+        .desk-paper::after {
+            content: "";
+            inset: -180% auto auto 260%;
+            width: 134%;
+            height: 170%;
+            transform: rotate(-7deg);
+            opacity: 0.72;
+        }
+
+        .top-strip {
+            position: absolute;
+            top: 14px;
+            left: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 3;
+        }
+
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            clip-path: polygon(50% 0, 100% 50%, 50% 100%, 16% 84%, 0 50%, 16% 16%);
+            background: linear-gradient(180deg, #ffcf6d, #b86617);
+            box-shadow: 0 0 20px rgba(255, 180, 80, 0.3);
+        }
+
+        .top-label {
+            padding: 8px 12px;
+            border: 1px solid var(--line);
+            background: rgba(17, 13, 10, 0.76);
+            color: var(--gold-bright);
+            font-size: 0.72rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .workspace {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(260px, 0.34fr) minmax(360px, 0.56fr);
+            grid-template-rows: minmax(0, 1fr);
+            gap: 14px;
+            min-height: 0;
+            padding-top: 62px;
+            padding-bottom: 0;
+        }
+
+        .panel-frame {
+            position: relative;
+            background:
+                linear-gradient(180deg, rgba(138, 63, 34, 0.28), rgba(51, 25, 18, 0.92)),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02), transparent 14%, transparent 86%, rgba(255, 255, 255, 0.02));
+            border: 2px solid #6d3c22;
+            border-radius: 12px;
+            box-shadow:
+                0 0 0 1px rgba(255, 203, 137, 0.08) inset,
+                0 18px 46px rgba(0, 0, 0, 0.44);
+            overflow: hidden;
+        }
+
+        .panel-frame::before {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid rgba(255, 205, 138, 0.16);
+            border-radius: 9px;
+            pointer-events: none;
+        }
+
+        .mission-panel {
+            grid-column: 1;
+            grid-row: 1;
+            min-height: 0;
+        }
+
+        .mission-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 14px 8px;
+            border-bottom: 1px solid rgba(255, 206, 144, 0.12);
+            background:
+                linear-gradient(90deg, rgba(138, 26, 19, 0.78), rgba(92, 32, 18, 0.86) 36%, rgba(224, 103, 49, 0.28));
+        }
+
+        .identity {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .identity strong {
+            font-size: 3rem;
+            line-height: 0.9;
+            color: #f8dfbc;
+        }
+
+        .identity-meta {
+            display: grid;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .identity-meta span:first-child {
+            color: rgba(255, 220, 166, 0.78);
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .identity-meta span:last-child {
+            color: #fff1d7;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+
+        .copy-badge {
+            padding: 7px 12px;
+            border: 1px solid rgba(255, 219, 167, 0.22);
+            border-radius: 8px;
+            background: rgba(76, 44, 32, 0.72);
+            color: #f6dfb5;
+            font-size: 0.78rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        .mission-body {
+            display: grid;
+            grid-template-rows: minmax(0, 1fr);
+            min-height: calc(100% - 58px);
+            padding: 10px;
+        }
+
+        .showcase {
+            position: relative;
+            min-height: 0;
+            border-radius: 10px;
+            border: 2px solid rgba(188, 64, 42, 0.8);
+            background:
+                linear-gradient(135deg, rgba(121, 38, 25, 0.24), transparent 38%),
+                radial-gradient(circle at 48% 50%, rgba(145, 122, 255, 0.4), transparent 38%),
+                radial-gradient(circle at 54% 54%, rgba(96, 196, 255, 0.16), transparent 50%),
+                linear-gradient(180deg, rgba(18, 19, 24, 0.72), rgba(12, 12, 15, 0.92));
+            overflow: hidden;
+        }
+
+        .showcase::before,
+        .showcase::after {
+            content: "";
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .showcase::before {
+            inset: 0;
+            background:
+                radial-gradient(circle at 52% 48%, rgba(255, 255, 255, 0.14), transparent 18%),
+                radial-gradient(circle at 50% 50%, rgba(187, 88, 255, 0.18), transparent 30%),
+                linear-gradient(120deg, transparent 42%, rgba(255, 255, 255, 0.1) 50%, transparent 56%);
+            mix-blend-mode: screen;
+        }
+
+        .showcase::after {
+            inset: -18% -6%;
+            background:
+                repeating-linear-gradient(
+                    115deg,
+                    transparent 0,
+                    transparent 56px,
+                    rgba(255, 255, 255, 0.04) 56px,
+                    rgba(255, 255, 255, 0.04) 60px
+                );
+            opacity: 0.55;
+        }
+
+        .showcase-content {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px;
+            align-items: end;
+            gap: 10px;
+            height: 100%;
+            padding: 18px;
+        }
+
+        .showcase-copy {
+            align-self: end;
+            max-width: 560px;
+        }
+
+        .showcase-kicker {
+            display: inline-flex;
+            margin-bottom: 8px;
+            padding: 5px 8px;
+            border: 1px solid rgba(255, 224, 172, 0.26);
+            background: rgba(15, 13, 12, 0.62);
+            color: #f1b44f;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .showcase-title {
+            margin: 0 0 8px;
+            color: #fff0d4;
+            font-size: 2.75rem;
+            line-height: 0.95;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .showcase-text {
+            margin: 0;
+            max-width: 42ch;
+            color: rgba(255, 243, 218, 0.82);
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .sigil {
+            position: relative;
+            align-self: center;
+            justify-self: center;
+            width: 104px;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 171, 60, 0.84);
+            box-shadow:
+                0 0 0 12px rgba(255, 130, 35, 0.08),
+                0 0 26px rgba(255, 144, 33, 0.28);
+        }
+
+        .sigil::before,
+        .sigil::after {
+            content: "";
+            position: absolute;
+            inset: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+        }
+
+        .sigil::before {
+            width: 54%;
+            height: 54%;
+            border: 2px solid rgba(255, 205, 107, 0.88);
+            box-shadow: 0 0 18px rgba(255, 156, 41, 0.28);
+        }
+
+        .sigil::after {
+            width: 10px;
+            height: 10px;
+            background: #ffdc8b;
+            box-shadow: 0 0 18px rgba(255, 208, 109, 0.9);
+        }
+
+        .sigil-ring {
+            position: absolute;
+            inset: 10%;
+            border: 1px dashed rgba(255, 195, 95, 0.42);
+            border-radius: 50%;
+            animation: slowSpin 24s linear infinite;
+        }
+
+        .feed-panel {
+            grid-column: 2;
+            grid-row: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .feed-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 214, 150, 0.12);
+            background:
+                linear-gradient(90deg, rgba(255, 227, 190, 0.88), rgba(217, 146, 93, 0.8) 14%, rgba(108, 26, 18, 0.86) 82%, rgba(155, 41, 25, 0.9));
+        }
+
+        .feed-header strong {
+            display: block;
+            color: #3b1a10;
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .feed-header span {
+            display: block;
+            margin-top: 5px;
+            color: #2d130c;
+            font-size: 1.25rem;
+            font-weight: 900;
+            letter-spacing: 0.04em;
+        }
+
+        .feed-body {
+            position: relative;
+            display: grid;
+            grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+            gap: 8px;
+            padding: 10px;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 24%),
+                linear-gradient(180deg, rgba(44, 16, 11, 0.85), rgba(19, 13, 10, 0.95));
+        }
+
+        .feed-card {
+            padding: 10px;
+            min-height: 0;
+            overflow: hidden;
+            border: 1px solid rgba(255, 209, 147, 0.15);
+            border-radius: 8px;
+            background:
+                linear-gradient(120deg, rgba(255, 199, 125, 0.08), transparent 18%),
+                rgba(23, 15, 11, 0.86);
+            box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
+        }
+
+        .feed-card strong {
+            display: block;
+            color: #f2b34f;
+            font-size: 0.66rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .feed-card h3 {
+            margin: 6px 0 7px;
+            font-size: 1rem;
+            line-height: 1.15;
+            text-transform: uppercase;
+            color: #fff0d7;
+        }
+
+        .feed-card p {
+            margin: 0;
+            color: rgba(255, 238, 210, 0.75);
+            font-size: 0.78rem;
+            line-height: 1.42;
+        }
+
+        .feed-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 0;
+        }
+
+        .stat-chip {
+            padding: 8px 6px;
+            border-radius: 8px;
+            text-align: center;
+            background: rgba(60, 20, 15, 0.74);
+            border: 1px solid rgba(255, 213, 150, 0.1);
+        }
+
+        .stat-chip span {
+            display: block;
+            color: rgba(255, 220, 177, 0.6);
+            font-size: 0.58rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .stat-chip strong {
+            display: block;
+            margin-top: 4px;
+            color: #ffe6bb;
+            font-size: 1.1rem;
+            letter-spacing: 0.04em;
+        }
+
+        .news-panel {
+            grid-column: 3;
+            grid-row: 1;
+            min-height: 0;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            gap: 14px;
+            overflow: hidden;
+        }
+
+        .tool-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .tool-chip {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            border: 1px solid rgba(245, 214, 168, 0.18);
+            background:
+                linear-gradient(180deg, rgba(112, 68, 39, 0.82), rgba(45, 27, 19, 0.92));
+            display: grid;
+            place-items: center;
+            color: #efc077;
+            font-size: 1.25rem;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+        }
+
+        .bulletins {
+            display: grid;
+            grid-template-rows: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .bulletin {
+            position: relative;
+            min-height: 0;
+            overflow: hidden;
+            padding: 16px 18px;
+            border-radius: 12px;
+            border: 2px solid rgba(152, 88, 48, 0.86);
+            background:
+                linear-gradient(120deg, rgba(255, 195, 124, 0.1), transparent 26%),
+                radial-gradient(circle at 78% 50%, rgba(255, 130, 107, 0.16), transparent 28%),
+                rgba(24, 14, 11, 0.9);
+        }
+
+        .bulletin::after {
+            content: "";
+            position: absolute;
+            right: 12px;
+            top: 14px;
+            width: 24%;
+            height: 64%;
+            border-radius: 10px;
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.16), transparent 38%),
+                radial-gradient(circle at 40% 40%, var(--bullet-color, rgba(197, 53, 40, 0.58)), transparent 55%);
+            opacity: 0.9;
+        }
+
+        .bulletin strong {
+            display: block;
+            color: #f1b24c;
+            font-size: 0.62rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .bulletin h3 {
+            margin: 9px 0 8px;
+            max-width: 68%;
+            color: #fff1d6;
+            font-size: clamp(1.12rem, 1.55vw, 1.42rem);
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .bulletin p {
+            margin: 0;
+            max-width: 68%;
+            color: rgba(255, 234, 201, 0.74);
+            font-size: clamp(0.76rem, 0.95vw, 0.88rem);
+            line-height: 1.35;
+        }
+
+        .dock-row {
+            position: relative;
+            z-index: 4;
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(420px, 0.95fr);
+            gap: 12px;
+            align-items: end;
+            min-height: 0;
+        }
+
+        .profile-dock {
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            min-height: 0;
+        }
+
+        .dock-card {
+            position: relative;
+            min-height: 0;
+            padding: 10px 12px;
+            border: 2px solid rgba(153, 90, 48, 0.9);
+            border-radius: 12px;
+            background:
+                linear-gradient(180deg, rgba(118, 44, 22, 0.52), rgba(39, 22, 15, 0.96)),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04), transparent 16%);
+            box-shadow:
+                0 0 0 1px rgba(245, 211, 157, 0.08) inset,
+                0 18px 36px rgba(0, 0, 0, 0.34);
+            overflow: hidden;
+        }
+
+        .dock-card::before {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid rgba(255, 221, 178, 0.12);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        .profile-card {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) minmax(260px, 0.85fr);
+            gap: 14px;
+            align-items: center;
+        }
+
+        .profile-level {
+            color: #f8e0b9;
+            line-height: 0.9;
+        }
+
+        .profile-level small,
+        .profile-status-card small {
+            display: block;
+            color: rgba(255, 229, 188, 0.54);
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .profile-level strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 2.9rem;
+        }
+
+        .profile-meta h2 {
+            margin: 0;
+            color: #fff0d1;
+            font-size: 1.25rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .profile-meta p {
+            margin: 4px 0 8px;
+            color: rgba(255, 231, 196, 0.72);
+            font-size: 0.74rem;
+            line-height: 1.25;
+        }
+
+        .info-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .info-pill {
+            padding: 5px 7px;
+            border-radius: 7px;
+            background: rgba(16, 12, 10, 0.56);
+            border: 1px solid rgba(255, 220, 166, 0.1);
+            color: #f2ddb7;
+            font-size: 0.66rem;
+            letter-spacing: 0.04em;
+        }
+
+        .profile-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .profile-status-card {
+            display: grid;
+            align-content: center;
+            gap: 6px;
+            min-width: 0;
+            padding: 8px;
+            border: 1px solid rgba(255, 220, 166, 0.1);
+            border-radius: 8px;
+            background: rgba(16, 12, 10, 0.36);
+        }
+
+        .resource-bar {
+            position: relative;
+            height: 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 224, 180, 0.12);
+            background: rgba(12, 10, 9, 0.7);
+            overflow: hidden;
+        }
+
+        .resource-bar::before {
+            content: "";
+            position: absolute;
+            inset: 2px;
+            width: var(--fill, 50%);
+            border-radius: inherit;
+            background:
+                linear-gradient(90deg, #1f7f4b, #2ee285);
+            box-shadow: 0 0 14px rgba(44, 218, 118, 0.32);
+        }
+
+        .resource-value,
+        .wallet-value,
+        .inventory-value {
+            color: #fff0d3;
+            font-size: 1.02rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.08;
+        }
+
+        .wallet-value {
+            color: #ff6f55;
+        }
+
+        .menu-dock {
+            width: 100%;
+            height: 100%;
+            align-self: end;
+            padding: 10px 12px 12px;
+            border: 2px solid rgba(133, 76, 41, 0.92);
+            border-radius: 12px;
+            background:
+                linear-gradient(180deg, rgba(120, 39, 23, 0.56), rgba(37, 21, 15, 0.96));
+            box-shadow:
+                0 0 0 1px rgba(255, 216, 165, 0.08) inset,
+                0 18px 38px rgba(0, 0, 0, 0.36);
+        }
+
+        .menu-title {
+            margin-bottom: 8px;
+            color: rgba(255, 224, 173, 0.74);
+            font-size: 0.64rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            height: calc(100% - 22px);
+        }
+
+        .menu-button {
+            appearance: none;
+            border: 1px solid rgba(255, 219, 170, 0.14);
+            border-radius: 9px;
+            min-height: 0;
+            padding: 8px 6px;
+            background:
+                linear-gradient(180deg, rgba(63, 42, 28, 0.9), rgba(33, 22, 15, 0.96));
+            color: #e9c486;
+            cursor: pointer;
+            transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+        }
+
+        .menu-button:hover,
+        .menu-button:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(255, 214, 150, 0.3);
+            box-shadow: 0 16px 26px rgba(0, 0, 0, 0.24);
+            outline: none;
+        }
+
+        .menu-button.active {
+            background:
+                linear-gradient(180deg, rgba(176, 37, 26, 0.92), rgba(101, 26, 17, 0.96));
+            color: #ffdf91;
+            border-color: rgba(255, 220, 166, 0.34);
+            box-shadow:
+                0 0 0 1px rgba(255, 244, 212, 0.05) inset,
+                0 0 24px rgba(215, 85, 53, 0.26);
+        }
+
+        .menu-icon {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            margin: 0 auto 7px;
+            border-radius: 9px;
+            background: rgba(15, 12, 10, 0.28);
+            font-size: 1rem;
+        }
+
+        .menu-label {
+            display: block;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .menu-sub {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.55rem;
+            color: rgba(255, 233, 193, 0.58);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        /* Shared metal treatment for every card-like surface. */
+        :is(
+            .panel-frame,
+            .showcase,
+            .feed-card,
+            .stat-chip,
+            .tool-chip,
+            .bulletin,
+            .dock-card,
+            .menu-dock,
+            .menu-button,
+            .profile-status-card,
+            .copy-badge,
+            .info-pill,
+            .showcase-kicker
+        ) {
+            position: relative;
+            border-color: var(--metal-mid);
+            transform: translateY(-1px);
+            box-shadow:
+                0 0 0 1px var(--metal-dark),
+                0 1px 0 var(--metal-bright) inset,
+                0 -1px 0 rgba(74, 42, 22, 0.86) inset,
+                0 0 0 1px rgba(255, 244, 205, 0.08) inset,
+                0 18px 34px var(--float-shadow),
+                0 7px 18px var(--float-glow);
+            transition:
+                transform 180ms ease,
+                box-shadow 180ms ease,
+                border-color 180ms ease,
+                filter 180ms ease;
+        }
+
+        :is(.panel-frame, .dock-card, .menu-dock, .bulletin, .showcase)::before {
+            border-color: rgba(255, 235, 190, 0.24);
+        }
+
+        :is(.feed-card, .stat-chip, .tool-chip, .bulletin, .profile-status-card, .menu-button):hover,
+        :is(.feed-card, .stat-chip, .tool-chip, .bulletin, .profile-status-card, .menu-button):focus-visible {
+            transform: translateY(-4px);
+            border-color: rgba(255, 216, 143, 0.82);
+            filter: saturate(1.08) brightness(1.04);
+            box-shadow:
+                0 0 0 1px rgba(77, 44, 23, 0.96),
+                0 1px 0 rgba(255, 242, 202, 0.74) inset,
+                0 -1px 0 rgba(77, 43, 22, 0.92) inset,
+                0 0 0 1px rgba(255, 229, 164, 0.14) inset,
+                0 24px 42px rgba(0, 0, 0, 0.62),
+                0 10px 26px rgba(236, 151, 58, 0.22);
+        }
+
+        .panel-frame,
+        .dock-card,
+        .menu-dock {
+            box-shadow:
+                0 0 0 1px rgba(60, 34, 18, 0.98),
+                0 1px 0 rgba(255, 240, 199, 0.42) inset,
+                0 -1px 0 rgba(79, 43, 21, 0.92) inset,
+                0 0 0 1px rgba(255, 226, 168, 0.1) inset,
+                0 24px 52px rgba(0, 0, 0, 0.58),
+                0 10px 28px rgba(199, 102, 39, 0.16);
+        }
+
+        .menu-button.active {
+            border-color: rgba(255, 218, 139, 0.88);
+            box-shadow:
+                0 0 0 1px rgba(71, 36, 21, 0.94),
+                0 1px 0 rgba(255, 239, 189, 0.62) inset,
+                0 -1px 0 rgba(92, 28, 18, 0.9) inset,
+                0 0 0 1px rgba(255, 221, 136, 0.12) inset,
+                0 18px 34px rgba(0, 0, 0, 0.5),
+                0 0 28px rgba(225, 74, 45, 0.32);
+        }
+
+        .menu-icon {
+            border: 1px solid rgba(255, 224, 158, 0.2);
+            background:
+                linear-gradient(145deg, rgba(87, 58, 35, 0.86), rgba(19, 14, 11, 0.92));
+            box-shadow:
+                0 1px 0 rgba(255, 238, 196, 0.28) inset,
+                0 -1px 0 rgba(54, 31, 18, 0.78) inset,
+                0 8px 14px rgba(0, 0, 0, 0.26);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @keyframes slowSpin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 1180px) {
+            .hub {
+                min-height: 0;
+                padding-bottom: 16px;
+            }
+
+            .workspace {
+                grid-template-columns: minmax(0, 1fr);
+                min-height: 0;
+            }
+
+            .mission-panel,
+            .feed-panel,
+            .news-panel {
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .dock-row {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-dock,
+            .menu-dock {
+                width: 100%;
+            }
+
+            .profile-dock {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .profile-card {
+                grid-column: 1 / -1;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 880px) {
+            .showcase-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sigil {
+                justify-self: start;
+                width: 104px;
+            }
+
+            .profile-dock {
+                grid-template-columns: 1fr;
+            }
+
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .identity {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .identity-meta span:last-child {
+                white-space: normal;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .hub {
+                padding: 14px;
+            }
+
+            .workspace {
+                gap: 14px;
+                padding-top: 76px;
+            }
+
+            .mission-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .menu-button {
+                min-height: 0;
+            }
+
+            .bulletin h3,
+            .bulletin p {
+                max-width: 100%;
+            }
+
+            .bulletin::after {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="hub">
+        <div class="desk-paper" aria-hidden="true"></div>
+
+        <div class="top-strip">
+            <div class="brand-mark" aria-hidden="true"></div>
+            <div class="top-label">Wisteria Wilson Personal Console</div>
+        </div>
+
+        <div class="workspace">
+            <section class="panel-frame mission-panel" aria-labelledby="feature-title">
+                <div class="mission-header">
+                    <div class="identity">
+                        <strong id="feature-level">01</strong>
+                        <div class="identity-meta">
+                            <span id="feature-prefix">Personal Archive</span>
+                            <span id="feature-id">Wisteria Wilson / About</span>
+                        </div>
+                    </div>
+                    <div class="copy-badge" id="feature-badge">档案载入</div>
+                </div>
+
+                <div class="mission-body">
+                    <div class="showcase" id="feature-stage">
+                        <div class="showcase-content">
+                            <div class="showcase-copy">
+                                <div class="showcase-kicker" id="feature-kicker">Identity</div>
+                                <h1 class="showcase-title" id="feature-title">个人档案</h1>
+                                <p class="showcase-text" id="feature-text">
+                                    这里是整页的入口：用几句话介绍你是谁、你在做什么、你喜欢怎样表达自己。
+                                </p>
+                            </div>
+
+                            <div class="sigil" aria-hidden="true">
+                                <div class="sigil-ring"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <aside class="panel-frame feed-panel" aria-labelledby="feed-heading">
+                <div class="feed-header">
+                    <strong>Status Feed</strong>
+                    <span id="feed-heading">Personal Notes</span>
+                </div>
+
+                <div class="feed-body">
+                    <article class="feed-card">
+                    <strong id="feed-card-label">关键词</strong>
+                        <h3 id="feed-card-title">Creator / Learner</h3>
+                        <p id="feed-card-text">
+                            可以放你的身份标签、研究方向、性格关键词，或一句最能代表你的简介。
+                        </p>
+                    </article>
+
+                    <div class="feed-stats">
+                        <div class="stat-chip">
+                            <span id="stat1-label">Works</span>
+                            <strong id="stat1-value">03</strong>
+                        </div>
+                        <div class="stat-chip">
+                            <span id="stat2-label">Hobbies</span>
+                            <strong id="stat2-value">05</strong>
+                        </div>
+                        <div class="stat-chip">
+                            <span id="stat3-label">Music</span>
+                            <strong id="stat3-value">12</strong>
+                        </div>
+                    </div>
+
+                    <article class="feed-card">
+                        <strong>Session Memo</strong>
+                        <h3 id="memo-title">页面说明</h3>
+                        <p id="memo-text">
+                            右下角按钮会切换不同主题，中间主面板负责讲故事，右侧卡片负责列重点。
+                        </p>
+                    </article>
+                </div>
+            </aside>
+
+            <aside class="news-panel" aria-label="Side bulletins">
+                <div class="tool-row">
+                    <div class="tool-chip" aria-hidden="true">↻</div>
+                    <div class="tool-chip" aria-hidden="true">▥</div>
+                    <div class="tool-chip" aria-hidden="true">▤</div>
+                    <div class="tool-chip" aria-hidden="true">⚙</div>
+                </div>
+
+                <div class="bulletins">
+                    <article class="bulletin" style="--bullet-color: rgba(210, 43, 52, 0.66);">
+                        <strong>Season Notice</strong>
+                        <h3 id="bulletin1-title">我是谁</h3>
+                        <p id="bulletin1-text">在这里写你的个人定位，例如学生、开发者、创作者、设计爱好者。</p>
+                    </article>
+
+                    <article class="bulletin" style="--bullet-color: rgba(88, 153, 255, 0.52);">
+                        <strong>Archive Drop</strong>
+                        <h3 id="bulletin2-title">正在做</h3>
+                        <p id="bulletin2-text">列出你最近正在推进的项目、学习方向或长期计划。</p>
+                    </article>
+
+                    <article class="bulletin" style="--bullet-color: rgba(190, 190, 190, 0.48);">
+                        <strong>Memory Slot</strong>
+                        <h3 id="bulletin3-title">风格</h3>
+                        <p id="bulletin3-text">用三个词描述你的审美与表达方式，例如冷静、叙事、实验。</p>
+                    </article>
+                </div>
+            </aside>
+        </div>
+
+        <div class="dock-row">
+            <section class="profile-dock" aria-label="Profile dock">
+                <article class="dock-card profile-card">
+                    <div class="profile-level">
+                        <small>Profile ID</small>
+                        <strong>051</strong>
+                    </div>
+
+                    <div class="profile-meta">
+                        <h2>Wisteria Wilson</h2>
+                        <p>Personal archive, works, interests, music, and contact routes.</p>
+                        <div class="info-row">
+                            <span class="info-pill">Alias: Wisteria</span>
+                            <span class="info-pill">Role: Creator / Student</span>
+                            <span class="info-pill">Status: Updating</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-status-grid" aria-label="Current profile module">
+                        <div class="profile-status-card">
+                            <small id="resource-label">Module</small>
+                            <div class="resource-value" id="resource-value">Profile</div>
+                            <div class="resource-bar" id="resource-bar" style="--fill: 53%;"></div>
+                        </div>
+
+                        <div class="profile-status-card">
+                            <small id="wallet-label">Theme</small>
+                            <div class="wallet-value" id="wallet-value">Intro</div>
+                            <div class="info-pill" id="wallet-note">About me</div>
+                        </div>
+
+                        <div class="profile-status-card">
+                            <small id="inventory-label">Next</small>
+                            <div class="inventory-value" id="inventory-value">Works</div>
+                            <div class="info-pill" id="inventory-note">Show projects</div>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+        <section class="menu-dock" aria-labelledby="menu-title">
+            <div class="menu-title" id="menu-title">Display Modules</div>
+            <div class="menu-grid" role="tablist" aria-label="Main sections">
+                <button class="menu-button active" type="button" role="tab" aria-selected="true" data-view="profile">
+                    <span class="menu-icon" aria-hidden="true">ID</span>
+                    <span class="menu-label">档案</span>
+                    <span class="menu-sub">About</span>
+                </button>
+
+                <button class="menu-button" type="button" role="tab" aria-selected="false" data-view="works">
+                    <span class="menu-icon" aria-hidden="true">WK</span>
+                    <span class="menu-label">作品</span>
+                    <span class="menu-sub">Works</span>
+                </button>
+
+                <button class="menu-button" type="button" role="tab" aria-selected="false" data-view="hobbies">
+                    <span class="menu-icon" aria-hidden="true">HB</span>
+                    <span class="menu-label">爱好</span>
+                    <span class="menu-sub">Hobbies</span>
+                </button>
+
+                <button class="menu-button" type="button" role="tab" aria-selected="false" data-view="music">
+                    <span class="menu-icon" aria-hidden="true">♪</span>
+                    <span class="menu-label">音乐</span>
+                    <span class="menu-sub">Music</span>
+                </button>
+
+                <button class="menu-button" type="button" role="tab" aria-selected="false" data-view="contact">
+                    <span class="menu-icon" aria-hidden="true">@</span>
+                    <span class="menu-label">联系</span>
+                    <span class="menu-sub">Contact</span>
+                </button>
+            </div>
+        </section>
+        </div>
+    </main>
+
+    <script>
+        const views = {
+            profile: {
+                level: "01",
+                prefix: "Personal Archive",
+                id: "Wisteria Wilson / About",
+                badge: "档案载入",
+                kicker: "Identity",
+                title: "个人档案",
+                text: "这里是整页的入口：用几句话介绍你是谁、你在做什么、你喜欢怎样表达自己。之后可以把这段替换成你的正式自我介绍。",
+                feedLabel: "关键词",
+                feedTitle: "Creator / Learner",
+                feedText: "可以放你的身份标签、研究方向、性格关键词，或一句最能代表你的简介。",
+                stats: [
+                    ["Works", "03"],
+                    ["Hobbies", "05"],
+                    ["Music", "12"]
+                ],
+                memoTitle: "页面说明",
+                memoText: "右下角按钮会切换不同主题，中间主面板负责讲故事，右侧卡片负责列重点。",
+                bulletinTitles: ["我是谁", "正在做", "风格"],
+                bulletinTexts: [
+                    "在这里写你的个人定位，例如学生、开发者、创作者、设计爱好者。",
+                    "列出你最近正在推进的项目、学习方向或长期计划。",
+                    "用三个词描述你的审美与表达方式，例如冷静、叙事、实验。"
+                ],
+                resourceLabel: "Module",
+                energy: "Profile",
+                energyFill: "52%",
+                walletLabel: "Theme",
+                wallet: "Intro",
+                walletNote: "About me",
+                inventoryLabel: "Next",
+                inventory: "Works",
+                inventoryNote: "Show projects"
+            },
+            works: {
+                level: "02",
+                prefix: "Works Gallery",
+                id: "Projects / Portfolio",
+                badge: "作品索引",
+                kicker: "Portfolio",
+                title: "作品展示",
+                text: "这个模块用来展示你的项目、文章、网页、视频、绘画、研究或任何你想放进作品集里的东西。每张右侧卡片可以对应一个代表作。",
+                feedLabel: "作品状态",
+                feedTitle: "Selected Works",
+                feedText: "主面板可以放最重要的作品介绍，右侧三张卡片放精选项目或最近更新。",
+                stats: [
+                    ["Featured", "03"],
+                    ["Drafts", "07"],
+                    ["Updates", "14"]
+                ],
+                memoTitle: "展示建议",
+                memoText: "每个作品卡片都可以写：标题、类型、完成时间、你负责的部分，以及可点击链接。",
+                bulletinTitles: ["代表作 A", "代表作 B", "实验项目"],
+                bulletinTexts: [
+                    "放你最想让别人先看到的作品，例如个人网页、课程项目或创作集。",
+                    "放一个体现技术/审美/表达能力的项目，作为补充视角。",
+                    "放仍在成长中的实验，展示你的探索过程。"
+                ],
+                resourceLabel: "Module",
+                energy: "Works",
+                energyFill: "74%",
+                walletLabel: "Status",
+                wallet: "Build",
+                walletNote: "Portfolio",
+                inventoryLabel: "Next",
+                inventory: "Hobbies",
+                inventoryNote: "Personal side"
+            },
+            hobbies: {
+                level: "03",
+                prefix: "Interest Log",
+                id: "Hobbies / Daily Life",
+                badge: "兴趣频道",
+                kicker: "Hobbies",
+                title: "兴趣爱好",
+                text: "这里展示更生活化的一面：你喜欢的游戏、阅读、电影、摄影、写作、运动、收藏或任何让你持续投入的事。",
+                feedLabel: "兴趣雷达",
+                feedTitle: "Personal Signals",
+                feedText: "适合放你最稳定的爱好，以及它们如何影响你的创作和学习。",
+                stats: [
+                    ["Games", "04"],
+                    ["Books", "18"],
+                    ["Films", "09"]
+                ],
+                memoTitle: "内容方式",
+                memoText: "不要只列爱好名称，可以写为什么喜欢、喜欢多久、它带给你什么。",
+                bulletinTitles: ["喜欢的游戏", "阅读/电影", "日常习惯"],
+                bulletinTexts: [
+                    "写你喜欢的游戏类型、代表作品，或最影响你的世界观设计。",
+                    "放书单、影单、动画、漫画，或者你最近被触动的内容。",
+                    "放一些个人习惯，比如记录、散步、整理歌单、做小网页。"
+                ],
+                resourceLabel: "Module",
+                energy: "Hobby",
+                energyFill: "66%",
+                walletLabel: "Mood",
+                wallet: "Curious",
+                walletNote: "Personal",
+                inventoryLabel: "Next",
+                inventory: "Music",
+                inventoryNote: "Playlist"
+            },
+            music: {
+                level: "04",
+                prefix: "Music Shelf",
+                id: "Playlist / Sound",
+                badge: "播放队列",
+                kicker: "Music",
+                title: "音乐收藏",
+                text: "这个模块可以做成你的歌单墙：展示常听风格、喜欢的歌手、专辑、单曲，或者不同情绪下的背景音乐。",
+                feedLabel: "当前音色",
+                feedTitle: "Playlist Mood",
+                feedText: "可以按情绪分类：夜晚、通勤、学习、创作、战斗、安静。",
+                stats: [
+                    ["Artists", "12"],
+                    ["Albums", "08"],
+                    ["Tracks", "36"]
+                ],
+                memoTitle: "音乐区域",
+                memoText: "未来可以把右侧卡片改成可点击的歌单链接，跳到网易云、Spotify、B站或本地页面。",
+                bulletinTitles: ["常听风格", "推荐专辑", "循环单曲"],
+                bulletinTexts: [
+                    "写你最常听的类型，例如 J-pop、后摇、电子、古典、游戏原声。",
+                    "放一张你想推荐给访客的专辑，以及一句推荐理由。",
+                    "放最近循环最多的一首歌，展示当下的状态。"
+                ],
+                resourceLabel: "Module",
+                energy: "Music",
+                energyFill: "58%",
+                walletLabel: "Mode",
+                wallet: "Listen",
+                walletNote: "Soundscape",
+                inventoryLabel: "Next",
+                inventory: "Contact",
+                inventoryNote: "Find me"
+            },
+            contact: {
+                level: "05",
+                prefix: "Contact Route",
+                id: "Links / Social",
+                badge: "路线开放",
+                kicker: "Contact",
+                title: "联系入口",
+                text: "这里放可以找到你的地方：邮箱、GitHub、B站、微博、网易云、作品集链接，或者任何你愿意公开的社交入口。",
+                feedLabel: "可达路线",
+                feedTitle: "Open Channels",
+                feedText: "右侧卡片可以分别对应代码、创作平台和音乐/社交主页。",
+                stats: [
+                    ["Links", "05"],
+                    ["Public", "03"],
+                    ["Private", "02"]
+                ],
+                memoTitle: "链接建议",
+                memoText: "先用占位文本，等你确认公开哪些账号后，再把每张卡片改成真正可点击链接。",
+                bulletinTitles: ["GitHub / 代码", "作品平台", "邮箱 / 社交"],
+                bulletinTexts: [
+                    "放代码仓库、项目主页、技术博客或研究记录。",
+                    "放视频、文章、图片、作品集、设计稿或创作平台。",
+                    "放邮箱和你愿意公开的社交账号。"
+                ],
+                resourceLabel: "Module",
+                energy: "Links",
+                energyFill: "46%",
+                walletLabel: "Status",
+                wallet: "Open",
+                walletNote: "Reachable",
+                inventoryLabel: "Next",
+                inventory: "Profile",
+                inventoryNote: "Back home"
+            }
+        };
+
+        const elements = {
+            level: document.getElementById("feature-level"),
+            prefix: document.getElementById("feature-prefix"),
+            id: document.getElementById("feature-id"),
+            badge: document.getElementById("feature-badge"),
+            kicker: document.getElementById("feature-kicker"),
+            title: document.getElementById("feature-title"),
+            text: document.getElementById("feature-text"),
+            feedLabel: document.getElementById("feed-card-label"),
+            feedTitle: document.getElementById("feed-card-title"),
+            feedText: document.getElementById("feed-card-text"),
+            stat1Label: document.getElementById("stat1-label"),
+            stat1Value: document.getElementById("stat1-value"),
+            stat2Label: document.getElementById("stat2-label"),
+            stat2Value: document.getElementById("stat2-value"),
+            stat3Label: document.getElementById("stat3-label"),
+            stat3Value: document.getElementById("stat3-value"),
+            memoTitle: document.getElementById("memo-title"),
+            memoText: document.getElementById("memo-text"),
+            bulletin1Title: document.getElementById("bulletin1-title"),
+            bulletin2Title: document.getElementById("bulletin2-title"),
+            bulletin3Title: document.getElementById("bulletin3-title"),
+            bulletin1Text: document.getElementById("bulletin1-text"),
+            bulletin2Text: document.getElementById("bulletin2-text"),
+            bulletin3Text: document.getElementById("bulletin3-text"),
+            resourceLabel: document.getElementById("resource-label"),
+            resourceValue: document.getElementById("resource-value"),
+            resourceBar: document.getElementById("resource-bar"),
+            walletLabel: document.getElementById("wallet-label"),
+            walletValue: document.getElementById("wallet-value"),
+            walletNote: document.getElementById("wallet-note"),
+            inventoryLabel: document.getElementById("inventory-label"),
+            inventoryValue: document.getElementById("inventory-value"),
+            inventoryNote: document.getElementById("inventory-note")
+        };
+
+        const buttons = Array.from(document.querySelectorAll(".menu-button"));
+
+        function setView(viewId) {
+            const view = views[viewId];
+            if (!view) {
+                return;
+            }
+
+            elements.level.textContent = view.level;
+            elements.prefix.textContent = view.prefix;
+            elements.id.textContent = view.id;
+            elements.badge.textContent = view.badge;
+            elements.kicker.textContent = view.kicker;
+            elements.title.textContent = view.title;
+            elements.text.textContent = view.text;
+            elements.feedLabel.textContent = view.feedLabel;
+            elements.feedTitle.textContent = view.feedTitle;
+            elements.feedText.textContent = view.feedText;
+            elements.stat1Label.textContent = view.stats[0][0];
+            elements.stat1Value.textContent = view.stats[0][1];
+            elements.stat2Label.textContent = view.stats[1][0];
+            elements.stat2Value.textContent = view.stats[1][1];
+            elements.stat3Label.textContent = view.stats[2][0];
+            elements.stat3Value.textContent = view.stats[2][1];
+            elements.memoTitle.textContent = view.memoTitle;
+            elements.memoText.textContent = view.memoText;
+            elements.bulletin1Title.textContent = view.bulletinTitles[0];
+            elements.bulletin2Title.textContent = view.bulletinTitles[1];
+            elements.bulletin3Title.textContent = view.bulletinTitles[2];
+            elements.bulletin1Text.textContent = view.bulletinTexts[0];
+            elements.bulletin2Text.textContent = view.bulletinTexts[1];
+            elements.bulletin3Text.textContent = view.bulletinTexts[2];
+            elements.resourceLabel.textContent = view.resourceLabel;
+            elements.resourceValue.textContent = view.energy;
+            elements.resourceBar.style.setProperty("--fill", view.energyFill);
+            elements.walletLabel.textContent = view.walletLabel;
+            elements.walletValue.textContent = view.wallet;
+            elements.walletNote.textContent = view.walletNote;
+            elements.inventoryLabel.textContent = view.inventoryLabel;
+            elements.inventoryValue.textContent = view.inventory;
+            elements.inventoryNote.textContent = view.inventoryNote;
+
+            elements.title.setAttribute("data-view", viewId);
+
+            buttons.forEach((button) => {
+                const isActive = button.dataset.view === viewId;
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-selected", String(isActive));
+            });
+        }
+
+        buttons.forEach((button) => {
+            button.addEventListener("click", () => setView(button.dataset.view));
+        });
+
+        setView("profile");
+    </script>
+</body>
+</html>
